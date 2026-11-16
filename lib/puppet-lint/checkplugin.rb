@@ -37,6 +37,8 @@ class PuppetLint::CheckPlugin
   def fix_problems
     @problems.reject { |problem| problem[:kind] == :ignored || problem[:check] == :syntax }.each do |problem|
       next unless respond_to?(:fix)
+      # The token may have been removed by the fix of another check
+      next if problem[:token] && !PuppetLint::Data.tokens.include?(problem[:token])
 
       begin
         fix(problem)
