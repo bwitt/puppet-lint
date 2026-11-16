@@ -94,14 +94,19 @@ PuppetLint.new_check(:arrow_alignment) do
 
   def fix(problem)
     if problem[:newline]
-      index = tokens.index(problem[:token].prev_code_token.prev_token)
+      param_token = problem[:token].prev_code_token
+
+      # add whitespace to turn into the indent if there is none (e.g. `,param`)
+      add_token(tokens.index(param_token), PuppetLint::Lexer::Token.new(:WHITESPACE, '', 0, 0)) unless param_token.prev_token.type == :WHITESPACE
+
+      index = tokens.index(param_token.prev_token)
 
       # insert newline
       tokens.insert(index, PuppetLint::Lexer::Token.new(:NEWLINE, "\n", 0, 0))
 
       # indent the parameter to the correct depth
-      problem[:token].prev_code_token.prev_token.type = :INDENT
-      problem[:token].prev_code_token.prev_token.value = ' ' * problem[:newline_indent]
+      param_token.prev_token.type = :INDENT
+      param_token.prev_token.value = ' ' * problem[:newline_indent]
 
       end_param_idx = tokens.index(problem[:token].prev_code_token)
       start_param_idx = tokens.index(problem[:token].prev_token_of([:INDENT, :NEWLINE]))

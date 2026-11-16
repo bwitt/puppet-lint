@@ -762,6 +762,36 @@ describe 'arrow_alignment' do
       end
     end
 
+    context 'multiline resource with multiple params on a line and no space after the comma' do
+      let(:code) do
+        <<-END
+          file { '/abc':
+            ensure=>directory,owner=>test,group=>test,
+            mode=>'0755',
+          }
+        END
+      end
+
+      let(:fixed) do
+        <<-END
+          file { '/abc':
+            ensure =>directory,
+            owner  =>test,
+            group  =>test,
+            mode   =>'0755',
+          }
+        END
+      end
+
+      it 'detects 4 problems' do
+        expect(problems.size).to eq(4)
+      end
+
+      it 'moves the extra params onto their own lines without removing the commas' do
+        expect(manifest).to eq(fixed)
+      end
+    end
+
     context 'hash with strings containing variables as keys incorrectly aligned' do
       let(:code) do
         <<-END
