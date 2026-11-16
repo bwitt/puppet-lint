@@ -328,6 +328,44 @@ describe PuppetLint::Lexer::StringSlurper do
       end
     end
 
+    context 'when the tag is not alone on its line' do
+      let(:heredoc) { %(  echo THING\n  |-THING) }
+      let(:heredoc_tag) { 'THING' }
+
+      it 'does not terminate the heredoc early' do
+        expect(segments).to eq([
+                                 [:HEREDOC, "  echo THING\n  "],
+                                 [:HEREDOC_TERM, '|-THING'],
+                               ])
+      end
+    end
+
+    context 'when the closing tag is followed by whitespace' do
+      let(:heredoc) { %(  SOMETHING\n  |-THING  \nfoo) }
+      let(:heredoc_tag) { 'THING' }
+
+      it 'terminates the heredoc at the closing tag' do
+        expect(segments).to eq([
+                                 [:HEREDOC, "  SOMETHING\n  "],
+                                 [:HEREDOC_TERM, '|-THING  '],
+                               ])
+      end
+    end
+
+    context 'when the heredoc has CRLF line endings' do
+      let(:heredoc) { %(  ${foo}\r\n  |-THING\r\nfoo) }
+      let(:heredoc_tag) { '"THING"' }
+
+      it 'terminates the heredoc at the closing tag' do
+        expect(segments).to eq([
+                                 [:HEREDOC, '  '],
+                                 [:INTERP, 'foo'],
+                                 [:HEREDOC, "\r\n  "],
+                                 [:HEREDOC_TERM, '|-THING'],
+                               ])
+      end
+    end
+
     context 'when parsing a heredoc with interpolation disabled' do
       context 'that is a plain heredoc' do
         let(:heredoc) { %(  SOMETHING\n  ELSE\n  :\n  |-myheredoc) }

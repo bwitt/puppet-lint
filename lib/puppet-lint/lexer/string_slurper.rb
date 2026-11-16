@@ -55,13 +55,13 @@ class PuppetLint::Lexer
 
     def parse_heredoc(heredoc_tag)
       heredoc_name = heredoc_tag[%r{\A"?(.+?)"?(:.+?)?#{PuppetLint::Lexer::WHITESPACE_RE}*(/.*)?\Z}o, 1]
-      end_heredoc_pattern = %r{^\|?\s*-?\s*#{Regexp.escape(heredoc_name)}$}
+      end_heredoc_pattern = %r{\|?[ \t]*-?[ \t]*#{Regexp.escape(heredoc_name)}[ \t]*(?=\r?$)}
       interpolation = heredoc_tag.start_with?('"')
 
       @segment_type = :HEREDOC
 
       until scanner.eos?
-        if scanner.match?(end_heredoc_pattern)
+        if heredoc_end?(end_heredoc_pattern)
           end_heredoc(end_heredoc_pattern)
           break if interp_stack.empty?
         elsif interpolation && scanner.match?(START_INTERP_PATTERN)
@@ -78,6 +78,13 @@ class PuppetLint::Lexer
       end
 
       results
+    end
+
+    # The end tag must be the only thing on its line, apart from whitespace.
+    def heredoc_end?(pattern)
+      return false unless scanner.match?(pattern)
+
+      scanner.string.byteslice(0, scanner.pos).match?(%r{(\A|\n)[ \t]*\z})
     end
 
     def read_char

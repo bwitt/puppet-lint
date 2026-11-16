@@ -1637,7 +1637,30 @@ END
       expect(tokens[4].type).to eq(:HEREDOC_OPEN)
       expect(tokens[4].value).to eq('EOT')
       expect(tokens[6].type).to eq(:HEREDOC)
-      expect(tokens[6].value).to eq('something')
+      expect(tokens[6].value).to eq("something\n")
+      expect(tokens[6].raw).to eq("something\nEOT")
+    end
+
+    it 'handles multiple heredocs with the same tag and trailing whitespace' do
+      manifest = "$a = @(EOT)\n  foo\n  | EOT \n$b = @(EOT)\n  bar\n  | EOT\n"
+      tokens = lexer.tokenise(manifest)
+
+      heredocs = tokens.select { |t| t.type == :HEREDOC }
+      expect(heredocs.map(&:value)).to eq(["  foo\n  ", "  bar\n  "])
+      expect(tokens.find { |t| t.type == :VARIABLE && t.value == 'b' }.line).to eq(4)
+      expect(tokens.map(&:to_manifest).join).to eq(manifest)
+    end
+
+    it 'handles a heredoc with CRLF line endings' do
+      manifest = "$a = @(EOT)\r\n  foo\r\n  | EOT\r\n$b = 1\r\n"
+      tokens = lexer.tokenise(manifest)
+
+      expect(tokens[6].type).to eq(:HEREDOC)
+      expect(tokens[6].value).to eq("  foo\r\n  ")
+      expect(tokens[7].type).to eq(:NEWLINE)
+      expect(tokens[7].value).to eq("\r\n")
+      expect(tokens[8].type).to eq(:VARIABLE)
+      expect(tokens[8].line).to eq(4)
     end
   end
 
