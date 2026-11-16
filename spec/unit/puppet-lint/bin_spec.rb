@@ -61,6 +61,13 @@ describe PuppetLint::Bin do
     its(:stdout) { is_expected.to eq("puppet-lint #{PuppetLint::VERSION}") }
   end
 
+  context 'when asked to display help' do
+    let(:args) { '--help' }
+
+    its(:exitstatus) { is_expected.to eq(0) }
+    its(:stdout) { is_expected.to match(%r{/etc/puppet-lint\.rc\s+~/\.puppet-lint\.rc\s+\.puppet-lint\.rc}) }
+  end
+
   context 'when asked to display available checks' do
     let(:args) { '--list-checks' }
 

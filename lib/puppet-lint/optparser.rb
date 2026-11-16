@@ -11,6 +11,13 @@ class PuppetLint::OptParser
 
             PATH                         The path to the Puppet manifest.
 
+    Configuration Files:
+      Unless --no-config is given, options are loaded from these files in
+      order, with later files overriding earlier ones:
+        /etc/puppet-lint.rc
+        ~/.puppet-lint.rc
+        .puppet-lint.rc (in the current directory)
+
     Option:
   EOF
 
@@ -29,7 +36,7 @@ class PuppetLint::OptParser
         # nothing to do, option is handled differently
       end
 
-      opts.on('-c', '--config FILE', 'Load puppet-lint options from file.') do |file|
+      opts.on('-c', '--config FILE', 'Load puppet-lint options from file, in addition to the default files.') do |file|
         opts.load(file)
       end
 
