@@ -16,6 +16,30 @@ describe 'file_mode' do
       end
     end
 
+    context '3 digit file modes in multiple bodies with a resource reference' do
+      let(:code) do
+        <<-END
+          file {
+            '/one':
+              mode   => '755',
+              notify => Service['zero'];
+
+            '/two':
+              mode => '755';
+          }
+        END
+      end
+
+      it 'detects both problems' do
+        expect(problems.size).to eq(2)
+      end
+
+      it 'creates warnings' do
+        expect(problems).to contain_warning(msg).on_line(3).in_column(25)
+        expect(problems).to contain_warning(msg).on_line(7).in_column(23)
+      end
+    end
+
     context '4 digit file mode' do
       let(:code) { "file { 'foo': mode => '0777' }" }
 
