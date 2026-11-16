@@ -243,6 +243,38 @@ describe PuppetLint::Checks do
         instance.run(fileinfo, data)
       end
     end
+
+    context 'when a check that does not support YAML is enabled' do
+      let(:enabled_checks) { [:legacy_facts, :arrow_alignment] }
+
+      it 'does not run the check' do
+        expect(PuppetLint.configuration.check_object[:arrow_alignment]).not_to receive(:new)
+
+        instance.run(fileinfo, data)
+      end
+    end
+
+    context 'when a check declares that it supports YAML' do
+      let(:enabled_checks) { [:arrow_alignment] }
+      let(:check_class) { PuppetLint.configuration.check_object[:arrow_alignment] }
+
+      before(:each) do
+        allow(check_class).to receive(:yaml_compatible?).and_return(true)
+      end
+
+      it 'runs the check' do
+        expect(check_class).to receive(:new).and_call_original
+
+        instance.run(fileinfo, data)
+      end
+
+      it 'does not leave the tokens of a previous manifest around' do
+        PuppetLint::Data.tokens = PuppetLint::Lexer.new.tokenise("notify { 'foo': }")
+        instance.run(fileinfo, data)
+
+        expect(PuppetLint::Data.tokens).to be_empty
+      end
+    end
   end
 
   describe '#enabled_checks' do

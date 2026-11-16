@@ -13,6 +13,14 @@ class PuppetLint::CheckPlugin
     @problems = []
   end
 
+  # Public: Whether the check should also be run against YAML files. Checks
+  # that support YAML files can override this to return true.
+  #
+  # Returns a Boolean.
+  def self.yaml_compatible?
+    false
+  end
+
   # Internal: Check the manifest for problems and filter out any problems that
   # should be ignored.
   #

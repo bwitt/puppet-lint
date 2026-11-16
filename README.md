@@ -264,6 +264,20 @@ hierarchy:
 
 Refer to the [Puppet Core Facts documentation](https://www.puppet.com/docs/puppet/8/core_facts.html) for a complete list of available core facts.
 
+Only checks that support YAML files are run against them. A check plugin can opt in by defining `yaml_compatible?`:
+
+```ruby
+PuppetLint.new_check(:my_check) do
+  def self.yaml_compatible?
+    true
+  end
+
+  def check
+    # `manifest_lines` contains the YAML file, `tokens` is empty
+  end
+end
+```
+
 ### Spacing, Indentation, and Whitespace
 
 * Must use two-space soft tabs.

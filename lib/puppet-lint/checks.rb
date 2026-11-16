@@ -43,7 +43,9 @@ class PuppetLint::Checks
         path: PuppetLint::Data.path,
         filename: PuppetLint::Data.filename
       }
+      # don't leave the tokens and control comments of the previous file around
       PuppetLint::Data.tokens = []
+      PuppetLint::Data.parse_control_comments
     end
   end
 
@@ -58,8 +60,9 @@ class PuppetLint::Checks
     if File.extname(fileinfo).downcase.match?(%r{\.ya?ml$})
       PuppetLint::Data.path = fileinfo
       PuppetLint::Data.manifest_lines = data.split("\n", -1)
+      PuppetLint::Data.tokens = []
 
-      enabled_checks.select { |check| YAML_COMPATIBLE_CHECKS.include?(check) }.each do |check|
+      enabled_checks.select { |check| yaml_compatible?(check) }.each do |check|
         klass = PuppetLint.configuration.check_object[check].new
         # FIXME: shadowing #problems
         problems = klass.run
@@ -127,6 +130,15 @@ class PuppetLint::Checks
     ].join("\n")
 
     exit 1
+  end
+
+  # Internal: Determine if a check can be run against YAML files.
+  #
+  # check - The Symbol name of the check.
+  #
+  # Returns a Boolean.
+  def yaml_compatible?(check)
+    YAML_COMPATIBLE_CHECKS.include?(check) || PuppetLint.configuration.check_object[check].yaml_compatible?
   end
 
   # Internal: Get a list of checks that have not been disabled.
