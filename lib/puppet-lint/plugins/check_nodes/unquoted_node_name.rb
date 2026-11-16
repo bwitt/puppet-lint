@@ -2,6 +2,8 @@
 # each instance found.
 #
 # No style guide reference
+NODE_NAME_PART_TYPES = Set[:DOT, :NAME, :NUMBER].freeze
+
 PuppetLint.new_check(:unquoted_node_name) do
   def check
     node_tokens = tokens.select { |token| token.type == :NODE }
@@ -23,7 +25,10 @@ PuppetLint.new_check(:unquoted_node_name) do
 
       node_lbrace_idx = tokens.index(node_lbrace_tok)
 
-      invalid_tokens = tokens[node_token_idx..node_lbrace_idx].select { |token| token.type == :NAME && token.value != 'default' }
+      # a dotted node name (e.g. foo.example.com) is lexed as several tokens, so only report its first part
+      invalid_tokens = tokens[node_token_idx..node_lbrace_idx].select do |token|
+        token.type == :NAME && token.value != 'default' && token.prev_token.type != :DOT
+      end
 
       invalid_tokens.each do |token|
         notify(
@@ -40,6 +45,11 @@ PuppetLint.new_check(:unquoted_node_name) do
   end
 
   def fix(problem)
-    problem[:token].type = :SSTRING
+    token = problem[:token]
+    while NODE_NAME_PART_TYPES.include?(token.next_token&.type)
+      token.value += token.next_token.value
+      remove_token(token.next_token)
+    end
+    token.type = :SSTRING
   end
 end

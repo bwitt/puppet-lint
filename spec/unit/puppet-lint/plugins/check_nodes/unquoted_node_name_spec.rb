@@ -54,6 +54,18 @@ describe 'unquoted_node_name' do
       end
     end
 
+    context 'dotted node name' do
+      let(:code) { 'node foo.example.com { }' }
+
+      it 'only detects a single problem' do
+        expect(problems.size).to eq(1)
+      end
+
+      it 'creates a warning' do
+        expect(problems).to contain_warning(msg).on_line(1).in_column(6)
+      end
+    end
+
     context 'mixed node name types' do
       let(:code) { "node foo, 'bar', baz { }" }
 
@@ -133,6 +145,24 @@ describe 'unquoted_node_name' do
       end
 
       it 'quotes all three node names' do
+        expect(manifest).to eq(fixed)
+      end
+    end
+
+    context 'dotted node names' do
+      let(:code) { 'node foo.example.com, bar01.example.com { }' }
+      let(:fixed) { "node 'foo.example.com', 'bar01.example.com' { }" }
+
+      it 'detects 2 problems' do
+        expect(problems.size).to eq(2)
+      end
+
+      it 'fixes the 2 problems' do
+        expect(problems).to contain_fixed(msg).on_line(1).in_column(6)
+        expect(problems).to contain_fixed(msg).on_line(1).in_column(23)
+      end
+
+      it 'quotes the whole node names' do
         expect(manifest).to eq(fixed)
       end
     end
