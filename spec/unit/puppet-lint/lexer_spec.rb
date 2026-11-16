@@ -1304,6 +1304,23 @@ END
     end
   end
 
+  ['unless', 'type', 'in', 'node'].each do |keyword|
+    it "handles '#{keyword}' as a name when used as a resource attribute" do
+      tokens = lexer.tokenise("exec { 'foo':\n  #{keyword} => 'bar',\n}")
+      expect(tokens[8].type).to eq(:NAME)
+      expect(tokens[8].value).to eq(keyword)
+      expect(tokens[10].type).to eq(:FARROW)
+    end
+  end
+
+  ['default', 'undef', 'true', 'false'].each do |keyword|
+    it "handles '#{keyword}' as a keyword when used as a selector case" do
+      tokens = lexer.tokenise("$foo ? { #{keyword} => 'bar' }")
+      expect(tokens[6].type).to eq(keyword.upcase.to_sym)
+      expect(tokens[6].value).to eq(keyword)
+    end
+  end
+
   [
     [:LBRACK, '['],
     [:RBRACK, ']'],

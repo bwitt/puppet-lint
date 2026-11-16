@@ -69,6 +69,18 @@ describe PuppetLint::Data do
         expect(data.resource_indexes.length).to eq(5)
       end
     end
+
+    context 'when a resource attribute name is a keyword' do
+      let(:manifest) { <<-MANIFEST }
+        exec { '/bin/some_command':
+          unless => '/bin/foo',
+        }
+      MANIFEST
+
+      it 'includes the attribute in the param tokens' do
+        expect(data.resource_indexes.first[:param_tokens].map(&:value)).to eq(['unless'])
+      end
+    end
   end
 
   describe '.insert' do

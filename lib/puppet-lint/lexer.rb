@@ -76,6 +76,10 @@ class PuppetLint::Lexer
     'private' => true
   }.freeze
 
+  # Internal: A Set of the keywords that are values, so can be used as keys in
+  # a hash or selector.
+  KEYWORD_VALUES = Set['default', 'undef', 'true', 'false'].freeze
+
   # Internal: A Hash whose keys are Strings representing reserved keywords in
   # the Puppet DSL when Application Management is enabled
   # From https://github.com/puppetlabs/puppet/blob/main/lib/puppet/pops/parser/lexer2.rb#L142-L159
@@ -246,11 +250,7 @@ class PuppetLint::Lexer
         next if value.nil?
 
         i += value.size
-        tokens << if type == :NAME && KEYWORDS.include?(value)
-                    new_token(value.upcase.to_sym, value)
-                  else
-                    new_token(type, value)
-                  end
+        tokens << new_token(keyword_type(type, value, chunk), value)
         found = true
         break
       end
@@ -354,6 +354,21 @@ class PuppetLint::Lexer
     end
 
     tokens
+  end
+
+  # Internal: Determine the token type of a word, which is a keyword unless it
+  # is used as a resource attribute name (e.g. `unless => ...`).
+  #
+  # type  - The Symbol token type the word was matched as.
+  # value - The String word.
+  # chunk - The String manifest code starting with the word.
+  #
+  # Returns the Symbol token type.
+  def keyword_type(type, value, chunk)
+    return type unless type == :NAME && KEYWORDS.include?(value)
+    return :NAME if !KEYWORD_VALUES.include?(value) && chunk.match?(%r{\G\s*=>}, value.size)
+
+    value.upcase.to_sym
   end
 
   # Internal: Given the tokens already processed, determine if the next token
