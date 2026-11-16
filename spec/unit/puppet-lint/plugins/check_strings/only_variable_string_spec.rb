@@ -40,6 +40,34 @@ describe 'only_variable_string' do
       end
     end
 
+    context 'string containing only a variable with whitespace in the braces' do
+      let(:code) { '"${ foo }"' }
+
+      it 'only detects a single problem' do
+        expect(problems.size).to eq(1)
+      end
+
+      it 'creates a warning' do
+        expect(problems).to contain_warning(msg).on_line(1).in_column(5)
+      end
+    end
+
+    context 'string containing a variable and text with whitespace in the braces' do
+      let(:code) { '"${ foo }bar"' }
+
+      it 'does not detect any problems' do
+        expect(problems).to be_empty
+      end
+    end
+
+    context 'string containing a function call with whitespace in the braces' do
+      let(:code) { '"${ foo() }"' }
+
+      it 'does not detect any problems' do
+        expect(problems).to be_empty
+      end
+    end
+
     context 'string containing only a variable as a hash key' do
       let(:code) do
         <<-END
@@ -110,6 +138,30 @@ describe 'only_variable_string' do
 
       it 'unquotes the variable' do
         expect(manifest).to eq('$foo[0][aoeuaoeu][bar][999]')
+      end
+    end
+
+    context 'string containing only a variable with whitespace in the braces' do
+      let(:code) { '"${ foo }"' }
+
+      it 'fixes the manifest' do
+        expect(problems).to contain_fixed(msg).on_line(1).in_column(5)
+      end
+
+      it 'unquotes the variable' do
+        expect(manifest).to eq('$foo')
+      end
+    end
+
+    context 'string containing only a variable w/ ref and whitespace in the braces' do
+      let(:code) { '"${ $foo[0] }"' }
+
+      it 'fixes the manifest' do
+        expect(problems).to contain_fixed(msg).on_line(1).in_column(5)
+      end
+
+      it 'unquotes the variable' do
+        expect(manifest).to eq('$foo[0]')
       end
     end
   end

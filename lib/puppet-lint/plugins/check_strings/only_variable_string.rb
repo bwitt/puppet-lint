@@ -6,18 +6,18 @@ VAR_TYPES = Set[:VARIABLE, :UNENC_VARIABLE]
 
 PuppetLint.new_check(:only_variable_string) do
   def check
-    tokens.each_with_index do |start_token, start_token_idx|
+    tokens.each do |start_token|
       next unless start_token.type == :DQPRE && start_token.value == ''
 
-      var_token = start_token.next_token
-      next unless VAR_TYPES.include?(var_token.type)
+      # whitespace inside the braces (`"${ foo }"`) makes the variable a NAME
+      var_token = start_token.next_code_token
+      next unless VAR_TYPES.include?(var_token.type) || var_token.type == :NAME
 
-      eos_offset = 2
+      eos_token = var_token.next_code_token
       loop do
-        eos_token = tokens[start_token_idx + eos_offset]
-        case eos_token.type
+        case eos_token&.type
         when :LBRACK
-          eos_offset += 3
+          3.times { eos_token = eos_token&.next_code_token }
         when :DQPOST
           if eos_token.value == ''
             break if eos_token.next_code_token && eos_token.next_code_token.type == :FARROW
@@ -43,8 +43,12 @@ PuppetLint.new_check(:only_variable_string) do
   end
 
   def fix(problem)
-    remove_token(problem[:start_token])
-    remove_token(problem[:end_token])
+    # remove any whitespace inside the braces along with the quotes
+    start_idx = tokens.index(problem[:start_token])
+    var_idx = tokens.index(problem[:var_token])
+    last_idx = tokens.index(problem[:end_token].prev_code_token)
+    end_idx = tokens.index(problem[:end_token])
+    (tokens[start_idx...var_idx] + tokens[(last_idx + 1)..end_idx]).each { |token| remove_token(token) }
 
     problem[:var_token].type = :VARIABLE
   end
