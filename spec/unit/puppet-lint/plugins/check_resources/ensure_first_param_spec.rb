@@ -197,6 +197,31 @@ describe 'ensure_first_param' do
       end
     end
 
+    context 'ensure after a param with a heredoc value' do
+      let(:code) do
+        <<-END
+          file { 'foo':
+            content => @("EOF"),
+              blah blah
+              |- EOF
+            ensure  => present,
+          }
+        END
+      end
+
+      it 'detects a problem' do
+        expect(problems.size).to eq(1)
+      end
+
+      it 'does not fix the problem' do
+        expect(problems).to contain_warning(msg).on_line(5).in_column(13)
+      end
+
+      it 'does not modify the manifest' do
+        expect(manifest).to eq(code)
+      end
+    end
+
     context 'ensure is a selector' do
       let(:code) do
         <<-END

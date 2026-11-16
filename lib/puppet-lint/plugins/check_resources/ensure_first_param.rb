@@ -44,6 +44,10 @@ PuppetLint.new_check(:ensure_first_param) do
     ensure_param_name_idx = tokens.index(ensure_param_name_token)
     ensure_param_comma_idx = tokens.index(ensure_param_comma_token)
 
+    # A heredoc body follows the end of the line, so it can't be moved with its param
+    moved_tokens = tokens[first_param_name_idx...first_param_comma_idx] + tokens[ensure_param_name_idx...ensure_param_comma_idx]
+    raise PuppetLint::NoFix if moved_tokens.any? { |t| t.type == :HEREDOC_OPEN }
+
     # Flip params
     prev_token = first_param_name_token.prev_token
     first_param_name_token.prev_token = ensure_param_name_token.prev_token
