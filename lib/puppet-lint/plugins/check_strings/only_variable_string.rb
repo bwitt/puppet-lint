@@ -30,6 +30,7 @@ PuppetLint.new_check(:only_variable_string) do
               start_token:,
               var_token:,
               end_token: eos_token,
+              title: title_tokens.include?(eos_token),
               description: 'Check the manifest tokens for double quoted strings that contain a single variable only and record a warning for each instance found.',
               help_uri: 'https://puppet.com/docs/puppet/latest/style_guide.html#quoting',
             )
@@ -43,6 +44,9 @@ PuppetLint.new_check(:only_variable_string) do
   end
 
   def fix(problem)
+    # Resource titles must be strings, so the quotes may be needed to stringify the variable
+    raise PuppetLint::NoFix if problem[:title]
+
     remove_token(problem[:start_token])
     remove_token(problem[:end_token])
 

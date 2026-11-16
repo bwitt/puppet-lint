@@ -112,5 +112,26 @@ describe 'only_variable_string' do
         expect(manifest).to eq('$foo[0][aoeuaoeu][bar][999]')
       end
     end
+
+    context 'string containing only a variable as a resource title' do
+      let(:code) do
+        <<-END
+          $version = SemVer('3.12.4')
+          notify { "${version}": }
+        END
+      end
+
+      it 'only detects a single problem' do
+        expect(problems.size).to eq(1)
+      end
+
+      it 'does not fix the manifest' do
+        expect(problems).to contain_warning(msg).on_line(2).in_column(23)
+      end
+
+      it 'does not unquote the variable' do
+        expect(manifest).to eq(code)
+      end
+    end
   end
 end
