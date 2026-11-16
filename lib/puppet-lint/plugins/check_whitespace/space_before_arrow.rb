@@ -67,6 +67,6 @@ PuppetLint.new_check(:space_before_arrow) do
       return
     end
 
-    add_token(tokens.index(token), PuppetLint::Lexer::Token.new(:WHITESPACE, ' ', 0, 0))
+    add_token(tokens.index(token) + 1, PuppetLint::Lexer::Token.new(:WHITESPACE, ' ', 0, 0))
   end
 end

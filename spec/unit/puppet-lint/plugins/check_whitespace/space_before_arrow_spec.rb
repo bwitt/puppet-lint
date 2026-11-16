@@ -83,6 +83,16 @@ describe 'space_before_arrow' do
       it 'fixes the manifest' do
         expect(problems).to contain_fixed(msg % [2, 14])
       end
+
+      it 'removes the extra space' do
+        expect(manifest).to eq(
+          <<-END,
+        file { 'foo':
+          foo => bar,
+        }
+          END
+        )
+      end
     end
   end
 
@@ -120,6 +130,50 @@ describe 'space_before_arrow' do
 
       it 'fixes the manifest' do
         expect(problems).to contain_fixed(msg % [2, 25])
+      end
+    end
+  end
+
+  context 'resource with a single param and no space before arrow' do
+    let(:code) do
+      <<-END
+        file { 'foo':
+          foo=> bar,
+        }
+      END
+    end
+
+    context 'with fix disabled' do
+      it 'detects missing space before arrow' do
+        expect(problems.size).to eq(1)
+      end
+
+      it 'produces a warning' do
+        expect(problems).to contain_warning(msg % [2, 11]).on_line(2).in_column(11)
+      end
+    end
+
+    context 'with fix enabled' do
+      before(:each) do
+        PuppetLint.configuration.fix = true
+      end
+
+      after(:each) do
+        PuppetLint.configuration.fix = false
+      end
+
+      it 'fixes the manifest' do
+        expect(problems).to contain_fixed(msg % [2, 11])
+      end
+
+      it 'adds a space between the param and the arrow' do
+        expect(manifest).to eq(
+          <<-END,
+        file { 'foo':
+          foo => bar,
+        }
+          END
+        )
       end
     end
   end
