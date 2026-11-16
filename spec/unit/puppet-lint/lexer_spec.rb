@@ -1770,6 +1770,50 @@ END
     end
   end
 
+  context ':VARIABLE' do
+    it 'includes access expressions' do
+      tokens = lexer.tokenise("$foo['bar'][0]")
+      expect(tokens.length).to eq(1)
+      expect(tokens[0].type).to eq(:VARIABLE)
+      expect(tokens[0].value).to eq("foo['bar'][0]")
+    end
+
+    it 'includes nested access expressions' do
+      tokens = lexer.tokenise('$foo[$bar[0]] = 1')
+      expect(tokens[0].type).to eq(:VARIABLE)
+      expect(tokens[0].value).to eq('foo[$bar[0]]')
+      expect(tokens[1].type).to eq(:WHITESPACE)
+    end
+
+    it 'handles brackets in a quoted key' do
+      tokens = lexer.tokenise(%(if $facts["[]"] {\n  #"${bar}"\n}))
+      expect(tokens[2].type).to eq(:VARIABLE)
+      expect(tokens[2].value).to eq('facts["[]"]')
+      expect(tokens[7].type).to eq(:COMMENT)
+    end
+
+    it 'handles a key with an interpolated access expression' do
+      tokens = lexer.tokenise(%($foo["${facts['networking']['hostname']}"]))
+      expect(tokens.length).to eq(1)
+      expect(tokens[0].type).to eq(:VARIABLE)
+      expect(tokens[0].value).to eq(%(foo["${facts['networking']['hostname']}"]))
+    end
+
+    it 'does not include unmatched brackets' do
+      tokens = lexer.tokenise('[$foo]')
+      expect(tokens[1].type).to eq(:VARIABLE)
+      expect(tokens[1].value).to eq('foo')
+      expect(tokens[2].type).to eq(:RBRACK)
+    end
+
+    it 'does not include brackets spanning multiple lines' do
+      tokens = lexer.tokenise("$foo[\n0]")
+      expect(tokens[0].type).to eq(:VARIABLE)
+      expect(tokens[0].value).to eq('foo')
+      expect(tokens[1].type).to eq(:LBRACK)
+    end
+  end
+
   context ':CLASSREF' do
     it 'matches single capitalised alphanumeric term' do
       token = lexer.tokenise('One').first

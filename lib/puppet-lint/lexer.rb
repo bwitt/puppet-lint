@@ -257,7 +257,7 @@ class PuppetLint::Lexer
 
       next if found
 
-      if (var_name = chunk[%r{\A\$((::)?(\w+(-\w+)*::)*\w+(-\w+)*(\[.+?\])*)}, 1])
+      if (var_name = variable_name(chunk))
         length = var_name.size + 1
         opts = if chunk.start_with?('$')
                  { raw: "$#{var_name}" }
@@ -354,6 +354,63 @@ class PuppetLint::Lexer
     end
 
     tokens
+  end
+
+  # Internal: Get the name of the variable at the start of the code, including
+  # any access expressions (e.g. `['foo']['bar']`) directly following it. Only
+  # matched pairs of [] that are closed on the same line are included, skipping
+  # over any quoted strings inside them.
+  #
+  # code - The String manifest code.
+  #
+  # Returns the String variable name without the leading $, or nil.
+  def variable_name(code)
+    name = code[%r{\A\$((::)?(\w+(-\w+)*::)*\w+(-\w+)*)}, 1]
+    return nil if name.nil?
+
+    i = name.size + 1
+    while code[i] == '['
+      close_idx = access_end(code, i)
+      break if close_idx.nil?
+
+      i = close_idx + 1
+    end
+    code[1...i]
+  end
+
+  # Internal: Find the ] matching the [ at index start in code.
+  #
+  # Returns the Integer index of the matching ], or nil if there is none on
+  # the same line.
+  def access_end(code, start)
+    depth = 0
+    i = start
+    while i < code.size
+      case code[i]
+      when '['
+        depth += 1
+      when ']'
+        depth -= 1
+        return i if depth.zero?
+      when "'"
+        str_content = StringScanner.new(code[i + 1..]).scan_until(%r{(\A|[^\\])(\\\\)*'})
+        return nil if str_content.nil?
+
+        i += str_content.size
+      when '"'
+        slurper = PuppetLint::Lexer::StringSlurper.new(code[i + 1..])
+        begin
+          slurper.parse
+        rescue PuppetLint::Lexer::StringSlurper::UnterminatedStringError
+          return nil
+        end
+        i += slurper.consumed_chars
+      when "\r", "\n"
+        return nil
+      end
+      i += 1
+    end
+    nil
   end
 
   # Internal: Given the tokens already processed, determine if the next token
