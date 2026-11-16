@@ -11,6 +11,8 @@ PuppetLint.new_check(:only_variable_string) do
 
       var_token = start_token.next_token
       next unless VAR_TYPES.include?(var_token.type)
+      # the text after a dash isn't part of an unenclosed variable name (e.g. "$foo-bar")
+      next if var_token.type == :UNENC_VARIABLE && var_token.value.include?('-')
 
       eos_offset = 2
       loop do

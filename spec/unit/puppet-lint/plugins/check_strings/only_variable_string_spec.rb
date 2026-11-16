@@ -40,6 +40,14 @@ describe 'only_variable_string' do
       end
     end
 
+    context 'string containing an unenclosed variable followed by a dash' do
+      let(:code) { '"$foo-bar"' }
+
+      it 'does not detect any problems' do
+        expect(problems).to be_empty
+      end
+    end
+
     context 'string containing only a variable as a hash key' do
       let(:code) do
         <<-END
