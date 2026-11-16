@@ -101,7 +101,8 @@ class PuppetLint::Lexer
     IF: true,
     ELSIF: true,
     LPAREN: true,
-    EQUALS: true
+    EQUALS: true,
+    FARROW: true
   }.freeze
 
   # Internal: some commonly used regular expressions

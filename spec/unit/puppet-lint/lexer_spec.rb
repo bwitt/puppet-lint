@@ -2046,6 +2046,15 @@ END
       expect(tokens[8].value).to eq('([\w\.]+(:\d+)?(\/\w+)?)(:(\w+))?')
     end
 
+    it 'properlies parse when a regex is an attribute value' do
+      tokens = lexer.tokenise("file_line { 'x':\n  match => /^'foo/,\n  line  => 'foo',\n}")
+      regex = tokens.find { |t| t.type == :REGEX }
+      expect(regex).not_to be_nil
+      expect(regex.value).to eq("^'foo")
+      expect(regex.prev_code_token.type).to eq(:FARROW)
+      expect(tokens.select { |t| t.type == :SSTRING }.map(&:value)).to eq(['x', 'foo'])
+    end
+
     it 'discriminates between division and regexes' do
       tokens = lexer.tokenise('if $a/10==0 or $b=~/{}/')
       expect(tokens[3].type).to eq(:DIV)
