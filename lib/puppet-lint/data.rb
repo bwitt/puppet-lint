@@ -151,17 +151,28 @@ class PuppetLint::Data
       end
     end
 
-    # Determine if the given token contains a CLASSREF in the token chain..
+    # Determine if the given token is inside a block opened by a CLASSREF
+    # (e.g. a resource defaults declaration).
     #
     # @param [PuppetLint::Lexer::Token] token
     #
     # @api private
     def classref?(token)
+      depth = 0
       current_token = token
       while (current_token = current_token.prev_code_token)
-        return true if current_token.type == :CLASSREF
-        return false if current_token.type == :NAME
+        case current_token.type
+        when :RBRACE, :RBRACK, :RPAREN
+          depth += 1
+        when :LBRACK, :LPAREN
+          depth -= 1
+        when :LBRACE
+          return current_token.prev_code_token&.type == :CLASSREF if depth.zero?
+
+          depth -= 1
+        end
       end
+      false
     end
 
     # Calculate the positions of all resource declarations within the

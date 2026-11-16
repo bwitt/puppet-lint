@@ -69,6 +69,29 @@ describe PuppetLint::Data do
         expect(data.resource_indexes.length).to eq(5)
       end
     end
+
+    context 'when a resource body follows a resource reference' do
+      let(:manifest) { <<-MANIFEST }
+        exec {
+          'command1':
+            command => '/usr/bin/true',
+            require => File['/tmp/example.txt'];
+          'command2':
+            command => '/usr/bin/true',
+            require => File['/tmp/example.txt'];
+        }
+
+        File['/tmp/example.txt'] -> class { 'foo':
+          ensure => present,
+        }
+      MANIFEST
+
+      it 'returns all the resource bodies' do
+        expect(data.resource_indexes.length).to eq(3)
+        params = data.resource_indexes.map { |r| r[:param_tokens].map(&:value) }
+        expect(params).to eq([['command', 'require'], ['command', 'require'], ['ensure']])
+      end
+    end
   end
 
   describe '.insert' do
