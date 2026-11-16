@@ -106,6 +106,32 @@ describe PuppetLint::Bin do
     end
   end
 
+  context 'when passed multiple paths including a directory' do
+    let(:args) do
+      [
+        'spec/fixtures/test/manifests/fail.pp',
+        'spec/fixtures/test/manifests/issue_254_overwriting_yaml',
+      ]
+    end
+
+    its(:exitstatus) { is_expected.to eq(1) }
+    its(:stdout) { is_expected.to match(%r{^#{args[0]} - ERROR: test::foo not in autoload module layout}) }
+    its(:stdout) { is_expected.to match(%r{^#{args[1]}/class_with_dash\.pp - ERROR: class name containing a dash}) }
+  end
+
+  context 'when passed multiple directories' do
+    let(:args) do
+      [
+        'spec/fixtures/test/manifests/issue_254_overwriting_yaml',
+        'spec/fixtures/test/manifests',
+      ]
+    end
+
+    its(:exitstatus) { is_expected.to eq(1) }
+    its(:stdout) { is_expected.to match(%r{^#{args[0]}/class_with_dash\.pp - ERROR: class name containing a dash}) }
+    its(:stdout) { is_expected.to match(%r{^#{args[1]}/fail\.pp - ERROR: test::foo not in autoload module layout}) }
+  end
+
   context 'when passed a malformed file' do
     let(:args) { 'spec/fixtures/test/manifests/malformed.pp' }
 
